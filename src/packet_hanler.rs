@@ -11,7 +11,6 @@ impl PacketHandler for Ipv4PacketHandler {
     fn handle(&self, packet: &EthernetPacket) {
         let payload = packet.payload();
 
-        // Assuming IPv4 addresses are at specific offsets within the payload
         if payload.len() >= 20 {
             let ihl = (payload[0] & 0x0f) as usize;
             let header_length = ihl*4;
@@ -20,13 +19,21 @@ impl PacketHandler for Ipv4PacketHandler {
                 print!("Invalid IPv4 packer: header len exceeds packet len");
                 return;
             }
-            let source_ip = ipv4_to_string(&payload[12..16]);
-            let dest_ip = ipv4_to_string(&payload[16..20]);
 
-            println!("Source IP: {}", source_ip);
-            println!("Dest IP: {}", dest_ip);
-            println!("Header length: {} bytes", header_length);
+            println!("Version: {}", (packet.payload()[0] & 0xf0) >> 4);
+            println!("IHL: {}", ihl);
+            println!("DSCP: {}", (packet.payload()[1] & 0xfc) >> 2);
+            println!("ECN: {}", (packet.payload()[1] & 0x03));
+            println!("Total Length: {} bytes", (((packet.payload()[2]) as u16) << 8) + (packet.payload()[3] as u16));
+            println!("Identification: {}", ((packet.payload()[4] as u16) << 8) + packet.payload()[5] as u16);
+            println!("Flags: {}", packet.payload()[6] & 0b11100000);
+            println!("Fragment offseet: {}", (((packet.payload()[6] & 0b00011111) as u16) << 8) + packet.payload()[7] as u16);
+            println!("TTL: {}", packet.payload()[8]);
             println!("Protocol: {}",packet.payload()[9]);
+            println!("Heder Checksum: {}", to_hex_string(&packet.payload()[10..12]));
+            println!("Header length: {} bytes", header_length);
+            println!("Source IP: {}", ipv4_to_string(&payload[12..16]));
+            println!("Dest IP: {}", ipv4_to_string(&payload[16..20]));
             println!("IP Payload: {}", to_hex_string(&packet.payload()[header_length..]));
             println!()
         } else {
